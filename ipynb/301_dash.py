@@ -1,18 +1,26 @@
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output
-import plotly.express as px
-
 import pandas as pd
 import pickle
 import os
+
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output
+import plotly.express as px
 
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+from urllib.request import urlopen
+import json
+
+# -----------------
+
+external_stylesheets = [dbc.themes.CYBORG]
+#external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -62,7 +70,7 @@ app.layout = html.Div([
 	]),
 
 	dcc.Graph(id='all-states-graphic'),
-
+	
 	html.Div([
 
 		html.Label('States'),
@@ -97,7 +105,10 @@ app.layout = html.Div([
 			dcc.Graph(id='cluster-bar-chart')
 
 		], className="six columns")
-	], className="row")
+	], className="row"),
+	
+	dcc.Graph(id='cluster-scatter-plot'),
+	dcc.Graph(id='cluster-chloropleth'),
 	
 ])
 
@@ -192,19 +203,96 @@ def update_cluster_bar_chart(xaxis_column_name, yaxis_column_name, states, clust
 	counts_dict = dict(Counter(labels))
 	counts_df = pd.DataFrame(list(counts_dict.items()),columns = ['Cluster','Counties']).sort_values(by='Cluster')
 
-	#colors = px.colors.qualitative.G10
-	colors = ['blue','red','orange','lightgreen','pink','gray','brown','purple','yellow','lightblue']
+	colors = {'0':'blue','1':'red','2':'orange','3':'darkseagreen','4':'deeppink',
+			  '5':'gray','6':'brown','7':'purple','8':'yellow','9':'lightblue'}
 	counts_df["Cluster"] = counts_df["Cluster"].astype(str)
 	fig = px.bar(counts_df, x='Cluster', y='Counties', 
-				 #color=colors[:clusters_k],
 				 color='Cluster',
-				 color_discrete_sequence=colors,
+				 color_discrete_map=colors,
 				 title='Cluster Sizes')
 	fig.update_xaxes(tickmode='array',tickvals=list(range(0,clusters_k)))
 	fig.update_xaxes(title='Cluster')
 	fig.update_yaxes(title='Counties')
 	fig.update_layout(margin={'l': 40, 'b': 40, 't': 50, 'r': 0}, hovermode='closest')
 	return fig
+
+@app.callback(
+	Output('cluster-scatter-plot', 'figure'),
+	Input('xaxis-column', 'value'),
+	Input('yaxis-column', 'value'),
+	Input('xaxis-type', 'value'),
+	Input('yaxis-type', 'value'),
+	Input('states', 'value'),
+	Input('clusters_k', 'value'))
+def update_cluster_scatter_plot(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, states, clusters_k):
+	
+	# Filter data down to states selected.
+	dff = df[df['State'].isin(states)].copy()
+
+	# Scale selected features.
+	col_names = [xaxis_column_name, yaxis_column_name]
+	features = dff[col_names]
+	scaler = StandardScaler().fit(features.values)
+	features = scaler.transform(features.values)
+
+	kmeans = KMeans(n_clusters=clusters_k, init ='k-means++', max_iter=300,  n_init=10, random_state=0)
+	labels = kmeans.fit_predict(features)
+	dff['Cluster'] = labels
+	dff['Cluster']=dff['Cluster'].astype(str)
+	
+	colors = {'0':'blue','1':'red','2':'orange','3':'darkseagreen','4':'deeppink',
+			  '5':'gray','6':'brown','7':'purple','8':'yellow','9':'lightblue'}
+	fig = px.scatter(dff, x=xaxis_column_name, y=yaxis_column_name, color='Cluster', color_discrete_map=colors, 
+					 category_orders={'Cluster':['0','1','2','3','4','5','6','7','8','9']}, 
+					 hover_name='Place', hover_data=col_names, title="K-Means Clustering")
+	fig.update_xaxes(title=xaxis_column_name, type='linear' if xaxis_type == 'Linear' else 'log')
+	fig.update_yaxes(title=yaxis_column_name, type='linear' if yaxis_type == 'Linear' else 'log')
+	fig.update_layout(margin={'l': 40, 'b': 40, 't': 50, 'r': 0}, hovermode='closest')
+	return fig
+
+@app.callback(
+	Output('cluster-chloropleth', 'figure'),
+	Input('xaxis-column', 'value'),
+	Input('yaxis-column', 'value'),
+	Input('xaxis-type', 'value'),
+	Input('yaxis-type', 'value'),
+	Input('states', 'value'),
+	Input('clusters_k', 'value'))
+def update_choropleth(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, states, clusters_k):
+
+	# Filter data down to states selected.
+	dff = df[df['State'].isin(states)].copy()
+
+	# Scale selected features.
+	col_names = [xaxis_column_name, yaxis_column_name]
+	features = dff[col_names]
+	scaler = StandardScaler().fit(features.values)
+	features = scaler.transform(features.values)
+
+	kmeans = KMeans(n_clusters=clusters_k, init ='k-means++', max_iter=300,  n_init=10, random_state=0)
+	labels = kmeans.fit_predict(features)
+	dff['Cluster'] = labels
+	dff['Cluster']=dff['Cluster'].astype(str)
+	
+	
+	color_map = {'0':'blue','1':'red','2':'orange','3':'darkseagreen','4':'deeppink',
+				 '5':'gray','6':'brown','7':'purple','8':'yellow','9':'lightblue'}
+	cluster_order = {'Cluster':['0','1','2','3','4','5','6','7','8','9']}
+	hover_columns = col_names
+
+	# Load a GEOJSON file containing the polygon definitions for counties by FIPS code.
+	with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+		counties = json.load(response)
+	
+	map_title = "Choropleth Map - Clusters for " + xaxis_column_name + " and " + yaxis_column_name
+	fig = px.choropleth(dff, geojson=counties, locations='FIPS_Code', color='Cluster', 
+						color_discrete_map=color_map, category_orders=cluster_order,
+						scope="usa", hover_name='Place', hover_data=hover_columns, title=map_title
+						)
+	fig.update_geos(fitbounds="locations", visible=False)
+	fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0}, title_x=.5)	
+	return fig
+
 
 if __name__ == '__main__':
 	app.run_server(debug=True)
