@@ -8,6 +8,7 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.express as px
+import plotly.graph_objs as pgo
 
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -19,8 +20,8 @@ import json
 
 # -----------------
 
-external_stylesheets = [dbc.themes.CYBORG]
-#external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+#external_stylesheets = [dbc.themes.BOOTSTRAP]
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -40,6 +41,7 @@ app.layout = html.Div([
 	html.Div([
 		html.H2(children='Capstone: Wealth and Population Influences on COVID-19 Cases and Vaccinations'),
 		
+		html.H4(children='Select features to cluster:'),
 		html.Div([
 			dcc.Dropdown(
 				id='xaxis-column',
@@ -53,7 +55,6 @@ app.layout = html.Div([
 				labelStyle={'display': 'inline-block'}
 			)
 		], style={'width': '48%', 'display': 'inline-block'}),
-
 		html.Div([
 			dcc.Dropdown(
 				id='yaxis-column',
@@ -69,26 +70,38 @@ app.layout = html.Div([
 		], style={'width': '48%', 'float': 'right', 'display': 'inline-block'})
 	]),
 
-	dcc.Graph(id='all-states-graphic'),
+	html.Div([html.Br()]),
 	
-	html.Div([
-
-		html.Label('States'),
-		dcc.Dropdown(
-			id='states',
-			options=[{'label': i, 'value': i} for i in df['State'].unique()],
-			value=['California', 'Florida'],
-			multi=True
-		)
-	]),
+	dcc.Graph(id='all-counties-scatter-plot'),
 	
-	dcc.Graph(id='select-states-graphic'),
-	
+	html.Div([html.Br()]),
+	html.H4(children='Select states to limit the counties clustered:'),
 	html.Div([
 		html.Div([
+			html.Label('States'),
+			dcc.Dropdown(
+				id='states',
+				options=[{'label': i, 'value': i} for i in df['State'].unique()],
+				value=['California', 'Florida'],
+				multi=True)
+		], style={'width': '48%', 'display': 'inline-block'}),
+		html.Div([
+			html.Label('Bubble Size Feature'),
+			dcc.Dropdown(
+				id='bubble-column',
+				options=[{'label': i, 'value': i} for i in feature_list],
+				value='Cases_Sq_Mile')
+		], style={'width': '48%', 'float': 'right', 'display': 'inline-block'})
+	]),
+	dcc.Graph(id='selected-states-scatter-plot'),
+	html.Div([html.Br()]),
+	html.H4(children='Select optimum number of clusters:'),
+	html.Div([
+		html.Div([
+			html.Div([html.Br()]),
+			html.Div([html.Br()]),
 			dcc.Graph(id='elbow-chart')
 		], className="six columns"),
-	
 		html.Div([
 			html.Label('Optimum Clusters (K)'),
 			dcc.Dropdown(
@@ -99,28 +112,28 @@ app.layout = html.Div([
 					{'label': '7', 'value': 7}, {'label': '8', 'value': 8},	{'label': '9', 'value': 9}, 
 					{'label': '10', 'value': 10}
 					],
-				value=3
-			),
-
+				value=3),
 			dcc.Graph(id='cluster-bar-chart')
-
 		], className="six columns")
 	], className="row"),
-	
+	html.Div([html.Br()]),	
+	html.H4(children='Review Plot of Clusters and Centroids:'),
 	dcc.Graph(id='cluster-scatter-plot'),
+	html.Div([html.Br()]),	
+	html.H4(children='Review Choropleth Map of Clusters:'),
 	dcc.Graph(id='cluster-chloropleth'),
-	
 ])
 
 @app.callback(
-	Output('all-states-graphic', 'figure'),
+	Output('all-counties-scatter-plot', 'figure'),
 	Input('xaxis-column', 'value'),
 	Input('yaxis-column', 'value'),
 	Input('xaxis-type', 'value'),
 	Input('yaxis-type', 'value'))
-def update_all_states_graph(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type):
+def update_all_counties_scatter_plot(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type):
 
-	fig = px.scatter(x=df[xaxis_column_name], y=df[yaxis_column_name], hover_name=df["Place"], title='\nAll States')
+	fig = px.scatter(x=df[xaxis_column_name], y=df[yaxis_column_name], 
+					 hover_name=df["Place"], title='All US Counties')
 	fig.update_layout(margin={'l': 40, 'b': 40, 't': 50, 'r': 0}, hovermode='closest')
 	fig.update_xaxes(title=xaxis_column_name, type='linear' if xaxis_type == 'Linear' else 'log')
 	fig.update_yaxes(title=yaxis_column_name, type='linear' if yaxis_type == 'Linear' else 'log')
@@ -128,16 +141,19 @@ def update_all_states_graph(xaxis_column_name, yaxis_column_name, xaxis_type, ya
 	return fig
 
 @app.callback(
-	Output('select-states-graphic', 'figure'),
+	Output('selected-states-scatter-plot', 'figure'),
 	Input('xaxis-column', 'value'),
 	Input('yaxis-column', 'value'),
 	Input('xaxis-type', 'value'),
 	Input('yaxis-type', 'value'),
-	Input('states', 'value'))
-def update_select_states_graph(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, states):
+	Input('states', 'value'),
+	Input('bubble-column', 'value'))
+def update_select_states_scatter_plot(xaxis_column_name, yaxis_column_name, 
+									  xaxis_type, yaxis_type, states, bubble_column):
     
 	dff = df[df['State'].isin(states)]
-	fig = px.scatter(dff, x=xaxis_column_name, y=yaxis_column_name, size="Cases_Sq_Mile", color="State", hover_name="Place")
+	fig = px.scatter(dff, x=xaxis_column_name, y=yaxis_column_name, 
+					 size=bubble_column, color="State", hover_name="Place")
 	fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0}, hovermode='closest')
 	fig.update_xaxes(title=xaxis_column_name, type='linear' if xaxis_type == 'Linear' else 'log')
 	fig.update_yaxes(title=yaxis_column_name, type='linear' if yaxis_type == 'Linear' else 'log')
@@ -174,9 +190,9 @@ def update_elbow_graph(xaxis_column_name, yaxis_column_name, states):
 		wcss.append(kmeans.inertia_)
 
 	fig = px.line(x=range(1,11), y=wcss, title='Elbow Curve')
-	fig.update_xaxes(title='Cluster')
-	fig.update_yaxes(title='WCSS')
-	fig.update_layout(margin={'l': 40, 'b': 20, 't': 110, 'r': 0}, hovermode='closest')
+	fig.update_xaxes(title='Number of Clusters')
+	fig.update_yaxes(title='Inertia')
+	fig.update_layout(margin={'l': 40, 'b': 20, 't': 50, 'r': 0}, hovermode='closest')
 	return fig
 
 @app.callback(
@@ -239,15 +255,20 @@ def update_cluster_scatter_plot(xaxis_column_name, yaxis_column_name, xaxis_type
 	labels = kmeans.fit_predict(features)
 	dff['Cluster'] = labels
 	dff['Cluster']=dff['Cluster'].astype(str)
+	centroids = scaler.inverse_transform(kmeans.cluster_centers_)
 	
-	colors = {'0':'blue','1':'red','2':'orange','3':'darkseagreen','4':'deeppink',
-			  '5':'gray','6':'brown','7':'purple','8':'yellow','9':'lightblue'}
-	fig = px.scatter(dff, x=xaxis_column_name, y=yaxis_column_name, color='Cluster', color_discrete_map=colors, 
+	color_dict = {'0':'blue','1':'red','2':'orange','3':'darkseagreen','4':'deeppink',
+				  '5':'gray','6':'brown','7':'purple','8':'yellow','9':'lightblue'}
+	fig = px.scatter(dff, x=xaxis_column_name, y=yaxis_column_name, color='Cluster', color_discrete_map=color_dict, 
 					 category_orders={'Cluster':['0','1','2','3','4','5','6','7','8','9']}, 
 					 hover_name='Place', hover_data=col_names, title="K-Means Clustering")
+	fig.add_trace(pgo.Scatter(x=centroids[:, 0], y=centroids[:, 1], mode='markers',
+							  marker=pgo.Marker(symbol='star-dot', size=12, color='black'),
+							  showlegend=False))
 	fig.update_xaxes(title=xaxis_column_name, type='linear' if xaxis_type == 'Linear' else 'log')
 	fig.update_yaxes(title=yaxis_column_name, type='linear' if yaxis_type == 'Linear' else 'log')
 	fig.update_layout(margin={'l': 40, 'b': 40, 't': 50, 'r': 0}, hovermode='closest')
+	
 	return fig
 
 @app.callback(
@@ -284,7 +305,7 @@ def update_choropleth(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_ty
 	with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
 		counties = json.load(response)
 	
-	map_title = "Choropleth Map - Clusters for " + xaxis_column_name + " and " + yaxis_column_name
+	map_title = "Cluster Map for " + xaxis_column_name + " and " + yaxis_column_name
 	fig = px.choropleth(dff, geojson=counties, locations='FIPS_Code', color='Cluster', 
 						color_discrete_map=color_map, category_orders=cluster_order,
 						scope="usa", hover_name='Place', hover_data=hover_columns, title=map_title
