@@ -19,7 +19,7 @@ This unit is represented in the data by the FIPS code
 
 ## Data Sets
 
-[Data Sources](https://github.com/knoppin1/DATA-606-Capstone/tree/main/Images/Data_Sources.png "Data Sources")
+![Data Sources](Images/Data_Sources.png "Data Sources")
 
 - Median Incomes Data 
 
