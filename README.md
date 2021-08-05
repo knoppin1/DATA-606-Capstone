@@ -21,6 +21,15 @@ This unit is represented in the data by the FIPS code
 
 ![Data Sources](Images/Data_Sources.png "Data Sources")
 
+## Merging Data Set Strategy
+
+1. Population and Land Area Data are merged on FIPS code column
+2. Vaccine Data merged with Median Incomes Data on County column
+3. Results from 1 & 2 merged with each other on FIPS code column
+4. Results from 3 merged with Virus Data on FIPS code column
+
+![Data Set Merging Strategy](Images/Merging_Data_Set_Strategy.png)
+
 - Median Incomes Data 
 
   https://www.bea.gov/sites/default/files/2020-11/lapi1120.xlsx 
