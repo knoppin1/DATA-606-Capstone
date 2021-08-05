@@ -18,6 +18,9 @@ This unit is represented in the data by the FIPS code
 * Used to group data features such as population density, income, COVID cases, deaths, and vaccinations during analysis and machine learning.
 
 ## Data Sets
+
+[Data Sources](https://github.com/knoppin1/DATA-606-Capstone/tree/main/Images/Data_Sources.png "Data Sources")
+
 - Median Incomes Data 
 
   https://www.bea.gov/sites/default/files/2020-11/lapi1120.xlsx 
