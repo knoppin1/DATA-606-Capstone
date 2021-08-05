@@ -80,6 +80,64 @@ An alternative is to look at the clustering of the select features in regional a
 
 https://knoppin1.pythonanywhere.com  (☚ TRY ME)
 
+-------------------
+
+![Webapp Run EDA](Images/webapp_run_eda.png)
+
+-------------------
+
+![Webapp K-Means Mid-Atlantic](Images/webapp_kmeans_mid_atlantic.png)
+
+#### Cluster Analysis
+* Cluster 0 - represents low to mid income counties with vaccinated population between 20% and 50%
+* Cluster 1 - represents mid to upper income counties with vaccinated population mostly in 40% to 60% range
+* Cluster 2 - represents upper income counties with centroid vaccinated population at 50% (note some outliers at less)
+* Cluster 3 - represents low to mid income counties with vaccinated population below 20%
+* Cluster 4 - represents mid to upper income counties with vaccinated population below 40% (centroid a little over 10%)
+
+#### Run Interpretation 
+* Clusters 3 and 4 should be the focus area for enhanced vaccination efforts / these are the more rural counties in VA
+* Choropleth shows I-95 corridor counties from northern VA through NJ have highest income and vaccination percentages
+
+-------------------
+
+![Webapp K-Means Northeast](Images/webapp_kmeans_northeast.png)
+
+#### Cluster Analysis
+* Cluster 0 - represents upper income counties with vaccinated population above 50% 
+* Cluster 1 - represents low to mid income counties with vaccinated population between 30% and 40%
+* Cluster 2 - represents low to mid income counties with vaccinated population between 40% and 55%
+* Cluster 3 - represents an outlier county in Massachusetts with high income, low vaccination percentage, and case density
+* Cluster 4 - represents mid to upper income counties with vaccinated population between 50% and 70%
+
+#### Run Interpretation 
+* Cluster 1 counties should be focus area for enhanced vaccination efforts 
+* Choropleth shows Cluster 1 concentrated in northern Vermont
+* Choropleth shows inland Maine counties highly represented in Cluster 2, which also would benefit from enhanced vaccination efforts
+
+-------------------
+### Interpretations and Conclusions
+
+Returning to the hypothesis questions the following findings surfaced from this study:
+
+1. Have wealthy counties been impacted differently by COVID-19?
+
+   Both the correlation and the clustering did not reflect wealth having impact on COVID-19 case density.  However, county wealth does appear to impact the vaccination percentage of the population.  The K-Means clustering runs show that both the scaling and the cluster meanings will vary in different regions of the country.  This was demonstrated with the K-Means web application in the section above.
+
+2. Has county population density played a role in COVID-19? 
+
+   The K-Means clustering reflected the strong linear correlation of population density and COVID-19 case density.  Basically, the study shows case density increases with higher county population density.  Population density (actually used case density) did not appear as a major influencing factor in the bubble charting showing the affect of wealth on vaccination percentage.
+
+3. Have county wealth and population density together influenced COVID-19 infections and vaccinations?
+
+   This question was not answered directly through a K-Means clustering as part of this study and was left as a future exercise.  An enhancement could be made to the K-Means web application to allow selection of three features from the data set.  Scenarios to investigate would be clustering on population density, median income, and case density as well as population density, median income, and vaccination percentage.
+
+An overall takeaway from this study is that K-Means clustering proved useful to group counties having similar attributes regarding the features studied in the dataset (i.e., median income, population, cases, vaccinations, density, etc.).  It became apparent after crafting many Jupyter notebooks that the need for dynamic clustering and selection of these features to address specific questions is valuable.  
+
+The development of the K-Means web application provided the flexible platform for completing the analysis and machine learning steps needed for this study.  This tool has value beyond the study and could be used to address "what if" scenarios benefiting public health workers as they react to changes in the COVID-19 cases and vaccinations throughout the pandemic.
+
+-------------------
+
 ## References
 1. Abdullah D;Susilo S;Ahmar AS;Rusli R;Hidayat R; “The Application of K-Means Clustering for Province Clustering in Indonesia of the Risk of the COVID-19 Pandemic Based on COVID-19 Data.” Quality & Quantity, U.S. National Library of Medicine, https://pubmed.ncbi.nlm.nih.gov/34103768. 
 2. Sengupta, Pooja, et al. “An Analysis of COVID-19 Clusters in India.” BMC Public Health, BioMed Central, 31 Mar. 2021, https://bmcpublichealth.biomedcentral.com/articles/10.1186/s12889-021-10491-8. 
