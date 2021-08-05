@@ -8,6 +8,15 @@ Since March 2020, the COVID-19 virus has raged through the US and around the wor
 
 The goal of this study is to use machine learning on US county data with a focus on uncovering possible correlations of wealth and population density relative to the virus cases, deaths, and vaccinations.
 
+## Unit of Analysis
+US County is the unit of analysis for this research.  
+
+This unit is represented in the data by the FIPS code
+
+* 5-digit Federal Information Processing Standards (FIPS) code uniquely identifying counties and county equivalents in the United States.  
+* Data sets are joined using the FIPS code (with corresponding county names)
+* Used to group data features such as population density, income, COVID cases, deaths, and vaccinations during analysis and machine learning.
+
 ## Data Sets
 - Median Incomes Data 
 
